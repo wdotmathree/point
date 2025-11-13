@@ -290,7 +290,7 @@ Value eval(Board &board) {
 	if (board.side == WHITE) {
 		score = nnue_eval(nnue_network, bs[winbucket][binbucket].w_acc, bs[winbucket][binbucket].b_acc, nbucket);
 	} else {
-		score = -nnue_eval(nnue_network, bs[winbucket][binbucket].b_acc, bs[winbucket][binbucket].w_acc, nbucket);
+		score = nnue_eval(nnue_network, bs[winbucket][binbucket].b_acc, bs[winbucket][binbucket].w_acc, nbucket);
 	}
 	return score;
 }

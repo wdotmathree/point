@@ -2,7 +2,7 @@
 
 #include "includes.hpp"
 #include "move.hpp"
-#include "ttable.hpp"
+// #include "ttable.hpp"
 #include "boardstate.hpp"
 
 // Selects the occupancy array by xoring 6 with side (white: false = 0 ^ 6 = 6, black: true = 1 ^ 6 = 7)
@@ -70,7 +70,7 @@ struct Board {
 	uint64_t pawn_hash = 0;
 	uint64_t nonpawn_hashval[2] = {0, 0}; // [side]
 	uint64_t major_hash = 0, minor_hash = 0;
-	TTable ttable;
+	// TTable ttable;
 	pzstd::largevector<uint64_t> hash_hist;
 
 	// Mailbox representation of the board for faster queries of certain data
@@ -81,15 +81,17 @@ struct Board {
 	std::stack<HistoryEntry> move_hist;
 	std::stack<uint8_t> halfmove_hist;
 
-	Board(int ttsize=DEFAULT_TT_SIZE) : ttable(ttsize) {
+	// Board(int ttsize=DEFAULT_TT_SIZE) : ttable(ttsize) {
+	Board() {
 		reset_board();
 		recompute_hash();
 	}
 
-	Board(std::string fen, int ttsize=DEFAULT_TT_SIZE) : ttable(ttsize) {
+	// Board(std::string fen, int ttsize=DEFAULT_TT_SIZE) : ttable(ttsize) {
+	Board(std::string fen) {
 		load_fen(fen);
 		recompute_hash();
-	};
+	}
 
 	void load_fen(std::string);
 	std::string get_fen() const;

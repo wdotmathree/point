@@ -13,13 +13,14 @@
 BoardState bs[NINPUTS * 2][NINPUTS * 2];
 
 // Options
-int TT_SIZE = DEFAULT_TT_SIZE;
+// int TT_SIZE = DEFAULT_TT_SIZE;
 bool quiet = false, online = false;
 int multipv = 1;
 
 void run_uci() {
 	std::string command;
-	Board board = Board(TT_SIZE);
+	// Board board = Board(TT_SIZE);
+	Board board;
 	while (getline(std::cin, command)) {
 		if (command == "uci") {
 			std::cout << "id name PZChessBot " << VERSION << std::endl;
@@ -50,15 +51,16 @@ void run_uci() {
 					std::cerr << "Invalid hash size: " << optionint << std::endl;
 					continue;
 				}
-				TT_SIZE = optionint * 1024 * 1024 / sizeof(TTable::TTBucket);
+				// TT_SIZE = optionint * 1024 * 1024 / sizeof(TTable::TTBucket);
 			} else if (optionname == "Quiet") {
 				quiet = optionvalue == "true";
 			} else if (optionname == "MultiPV") {
 				multipv = std::stoi(optionvalue);
 			}
 		} else if (command == "ucinewgame") {
-			board = Board(TT_SIZE);
-			clear_search_vars();
+			// board = Board(TT_SIZE);
+			board = Board();
+			// clear_search_vars();
 		} else if (command.substr(0, 8) == "position") {
 			// either `position startpos` or `position fen ...`
 			if (command.find("startpos") != std::string::npos) {
@@ -134,19 +136,20 @@ void run_uci() {
 			int inc = board.side ? binc : winc;
 			std::pair<Move, Value> res;
 			if (multipv != 1) {
-				if (inf) res = search_multipv(board, multipv, 1e9, MAX_PLY, 1e18, quiet)[0];
-				else if (depth != -1) res = search_multipv(board, multipv, 1e9, depth, 1e18, quiet)[0];
-				else if (nodes != -1) res = search_multipv(board, multipv, 1e9, MAX_PLY, nodes, quiet)[0];
-				else if (movetime != -1) res = search_multipv(board, multipv, movetime, MAX_PLY, 1e18, quiet)[0];
-				else res = search_multipv(board, multipv, 1e9, MAX_PLY, 1e18, quiet)[0];
+				// if (inf) res = search_multipv(board, multipv, 1e9, MAX_PLY, 1e18, quiet)[0];
+				// else if (depth != -1) res = search_multipv(board, multipv, 1e9, depth, 1e18, quiet)[0];
+				// else if (nodes != -1) res = search_multipv(board, multipv, 1e9, MAX_PLY, nodes, quiet)[0];
+				// else if (movetime != -1) res = search_multipv(board, multipv, movetime, MAX_PLY, 1e18, quiet)[0];
+				// else res = search_multipv(board, multipv, 1e9, MAX_PLY, 1e18, quiet)[0];
 			} else {
-				if (inf) res = search(board, 1e9, MAX_PLY, 1e18, quiet);
-				else if (depth != -1) res = search(board, 1e9, depth, 1e18, quiet);
-				else if (nodes != -1) res = search(board, 1e9, MAX_PLY, nodes, quiet);
-				else if (movetime != -1) res = search(board, movetime, MAX_PLY, 1e18, quiet);
-				else res = search(board, timemgmt(timeleft, inc, online), MAX_PLY, 1e18, quiet);
+				search(board, timemgmt(timeleft, inc, online), MAX_PLY);
+				// if (inf) res = search(board, 1e9, MAX_PLY, 1e18, quiet);
+				// else if (depth != -1) res = search(board, 1e9, depth, 1e18, quiet);
+				// else if (nodes != -1) res = search(board, 1e9, MAX_PLY, nodes, quiet);
+				// else if (movetime != -1) res = search(board, movetime, MAX_PLY, 1e18, quiet);
+				// else res = search(board, timemgmt(timeleft, inc, online), MAX_PLY, 1e18, quiet);
 			}
-			std::cout << "bestmove " << res.first.to_string() << std::endl;
+			// std::cout << "bestmove " << res.first.to_string() << std::endl;
 		}
 	}
 }
@@ -205,102 +208,24 @@ __attribute__((weak)) int main(int argc, char *argv[]) {
             "3br1k1/p1pn3p/1p3n2/5pNq/2P1p3/1PN3PP/P2Q1PB1/4R1K1 w - - 0 23",
             "2r2b2/5p2/5k2/p1r1pP2/P2pB3/1P3P2/K1P3R1/7R w - - 23 93",
 		};
-		Board board = Board(TT_SIZE);
+		// Board board = Board(TT_SIZE);
+		Board board;
 		uint64_t tot_nodes = 0;
 		uint64_t start = clock();
 		for (const auto &fen : bench_positions) {
 			board.reset(fen);
-			clear_search_vars();
-			search(board, 1e9, 12, 1e18, 0);
+			// clear_search_vars();
+			search(board, 1e9, 6);
+			// search(board, 1e9, 12, 1e18, 0);
 			tot_nodes += nodes;
 		}
 		uint64_t end = clock();
-		std::cout << tot_nodes << " nodes " << (tot_nodes / ((double)(end - start) / CLOCKS_PER_SEC)) << " nps" << std::endl;
-		return 0;
-	}
-	if (argc == 3 && std::string(argv[2]) == "quit") {
-		// assume genfens
-		// ./pzchessbot "genfens N seed S book None" "quit"
-		bool filter_weird = true;
-		int nmoves = 12;
-		std::string genfens = argv[1];
-		std::stringstream ss(genfens);
-		std::string book, token;
-		uint64_t n = 0, s = 0;
-		while (ss >> token) {
-			if (token == "genfens")
-				ss >> n;
-			else if (token == "seed")
-				ss >> s;
-			else if (token == "book")
-				ss >> book;
-			else if (token == "filter") {
-				ss >> token;
-				filter_weird = token == "1" || token == "true";
-			} else if (token == "nmoves") {
-				ss >> nmoves;
-			}
-		}
-		Board board = Board(TT_SIZE);
-		std::mt19937_64 rng(s);
-		std::ifstream bookfile(book == "None" ? "" : book);
-		std::vector<std::string> fens;
-		if (bookfile.is_open()) {
-			std::string line;
-			while (getline(bookfile, line)) {
-				fens.push_back(line);
-			}
-			bookfile.clear();
-			bookfile.close();
-		}
-		while (n--) {
-			if (fens.empty()) board.reset_startpos();
-			else {
-				board.reset(fens[rng() % fens.size()]);
-			}
-			bool restart = false;
-			for (int i = 0; i < nmoves; i++) {
-				pzstd::vector<Move> moves;
-				board.legal_moves(moves);
-				if (moves.size() == 0) {
-					restart = true;
-					break;
-				}
-				board.make_move(moves[rng() % moves.size()]);
-			}
-			bool in_check = false, checking_opponent = false;
-			if (board.side == WHITE) {
-				in_check = board.control(_tzcnt_u64(board.piece_boards[KING] & board.piece_boards[OCC(WHITE)]), BLACK);
-				checking_opponent = board.control(_tzcnt_u64(board.piece_boards[KING] & board.piece_boards[OCC(BLACK)]), WHITE);
-			} else {
-				in_check = board.control(_tzcnt_u64(board.piece_boards[KING] & board.piece_boards[OCC(BLACK)]), WHITE);
-				checking_opponent = board.control(_tzcnt_u64(board.piece_boards[KING] & board.piece_boards[OCC(WHITE)]), BLACK);
-			}
-			if (in_check || checking_opponent) restart = true;
-			// make sure position is legal and somewhat balanced
-			if (!restart) {
-				if (_mm_popcnt_u64(board.piece_boards[KING]) != 2) restart = true;
-				else if (filter_weird) {
-					auto s_eval = eval(board);
-					if (abs(s_eval) >= 600) restart = true; // do a fast static eval to quickly filter out crazy positions
-					else {
-						auto res = search(board, 1e9, MAX_PLY, 10000, 1);
-						if (abs(res.second) >= 400) restart = true;
-					}
-				}
-			}
-			if (restart) {
-				n++;
-				continue;
-			}
-			std::cout << "info string genfens " << board.get_fen() << std::endl;
-		}
+		std::cout << tot_nodes << " nodes " << (int)(tot_nodes / ((double)(end - start) / CLOCKS_PER_SEC)) << " nps" << std::endl;
 		return 0;
 	}
 	online = argc >= 2 && std::string(argv[1]) == "--online=1";
 	std::cout << "PZChessBot " << VERSION << " developed by kevlu8 and wdotmathree" << std::endl;
 	std::string command;
-	Board board = Board(TT_SIZE);
 	std::thread searchthread;
 	while (getline(std::cin, command)) {
 		if (command == "uci") {
@@ -312,102 +237,6 @@ __attribute__((weak)) int main(int argc, char *argv[]) {
 			std::cout << "option name Quiet type check default false" << std::endl;
 			std::cout << "uciok" << std::endl;
 			run_uci();
-		} else if (command == "quit") {
-			return 0;
-		} else if (command == "help") {
-			std::cout << "Available commands:" << std::endl;
-			std::cout << "  uci         - Start the UCI protocol" << std::endl;
-			std::cout << "  quit        - Quit the program" << std::endl;
-			std::cout << "  help        - Show this help message" << std::endl;
-			std::cout << "  eval        - Statically evaluate the current position" << std::endl;
-			std::cout << "  d           - Display the current board position" << std::endl;
-			std::cout << "  move <move> - Make a move (e.g., 'move e2e4')" << std::endl;
-			std::cout << "  go <ms>     - Start the search for the best move then play it, searching for <ms> milliseconds" << std::endl;
-			std::cout << "  reset       - Reset the board to the starting position" << std::endl;
-			std::cout << "  fen <fen>   - Set the board position from a FEN string" << std::endl;
-		} else {
-			// General pretty printed commands here
-			if (command == "eval") {
-				std::array<Value, 8> score = debug_eval(board);
-
-				std::cout << "\n" << CYAN "═══════════════════════════════════════" RESET << std::endl;
-				std::cout << BOLD CYAN "           POSITION EVALUATION          " RESET << std::endl;
-				std::cout << CYAN "═══════════════════════════════════════" RESET << std::endl;
-
-				board.print_board_pretty();
-
-				int nbucket = (_mm_popcnt_u64(board.piece_boards[OCC(WHITE)] | board.piece_boards[OCC(BLACK)]) - 2) / 4;
-
-				std::cout << BOLD YELLOW "Bucketed eval:" RESET << std::endl;
-				std::cout << CYAN "─────────────────────────────" RESET << std::endl;
-
-				for (int i = 0; i < 8; i++) {
-					std::string indicator = (i == nbucket) ? GREEN "→ " : "  ";
-					std::string current_marker = (i == nbucket) ? BOLD GREEN " (CURRENT)" RESET : "";
-
-					Value display_score = score[i] * (board.side == BLACK ? -1 : 1);
-
-					std::string score_color;
-					if (display_score > 100) score_color = GREEN;
-					else if (display_score > 0) score_color = YELLOW;
-					else if (display_score > -100) score_color = MAGENTA;
-					else score_color = RED;
-
-					std::cout << std::noshowpos << indicator << BLUE "Bucket " << i << ": " RESET
-							  << score_color << std::setw(6) << std::showpos << display_score << RESET
-							  << current_marker << std::endl;
-				}
-
-				std::cout << CYAN "─────────────────────────────" RESET << std::endl;
-				std::cout << YELLOW "Current evaluation: " RESET
-						  << (score[nbucket] * (board.side == BLACK ? -1 : 1) > 0 ? GREEN : RED)
-						  << std::showpos << (score[nbucket] * (board.side == BLACK ? -1 : 1)) 
-						  << " centipawns" << RESET << std::endl;
-				std::cout << CYAN "═══════════════════════════════════════" RESET << std::endl << std::endl;
-				std::cout << std::noshowpos;
-			} else if (command == "d") {
-				board.print_board_pretty(true);
-			} else if (command.substr(0, 4) == "move") {
-				pzstd::vector<Move> moves;
-				board.legal_moves(moves);
-				std::string move_str = command.substr(5);
-
-				bool exists = false;
-				for (const Move &m : moves) {
-					if (m.to_string() == move_str) {
-						exists = true;
-						break;
-					}
-				}
-
-				if (!exists) {
-					std::cout << RED "Invalid move: " RESET << move_str << std::endl;
-				} else {
-					Move move = Move::from_string(move_str, &board);
-					board.make_move(move);
-					std::cout << YELLOW "Move made: " RESET << move.to_string() << std::endl;
-					board.print_board_pretty();
-				}
-			} else if (command.substr(0, 2) == "go") {
-				int ms = std::stoi(command.substr(3));
-				auto res = search(board, ms, MAX_PLY, 1e18, 2); // Use quiet level 2 for pretty output
-				std::cout << CYAN "Best move: " RESET BOLD << res.first.to_string() << RESET
-						  << CYAN " with score: " RESET << (res.second * (board.side == BLACK ? -1 : 1) > 0 ? GREEN : RED)
-						  << std::showpos << res.second * (board.side == BLACK ? -1 : 1) << " cp" << RESET << std::endl << std::noshowpos;
-			} else if (command == "undo") {
-				board.unmake_move();
-				board.print_board_pretty();
-			} else if (command == "reset") {
-				board = Board(TT_SIZE);
-				std::cout << "Done" << std::endl;
-			} else if (command.substr(0, 3) == "fen") {
-				board = Board(TT_SIZE);
-				std::string fen = command.substr(4);
-				board.reset(fen);
-				std::cout << "Done" << std::endl;
-			} else {
-				std::cout << "Unknown command: " << command << std::endl;
-			}
 		}
 	}
 }
