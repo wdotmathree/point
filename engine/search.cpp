@@ -101,6 +101,16 @@ Value negamax(Board &b, int d, Value alpha, Value beta, int ply, bool root, bool
 	if (!root && b.threefold(ply))
 		return 0;
 
+	TTEntry *ent = b.ttable.probe(b.zobrist);
+	if (ent && ent->depth >= d && !root) {
+		if (ent->flag == EXACT)
+			return ent->score;
+		if (ent->flag == LOWER_BOUND && ent->score >= beta)
+			return ent->score;
+		if (ent->flag == UPPER_BOUND && ent->score <= alpha)
+			return ent->score;
+	}
+
 	if (d <= 0) {
 		return quiesce(b, alpha, beta);
 	}
@@ -123,6 +133,7 @@ Value negamax(Board &b, int d, Value alpha, Value beta, int ply, bool root, bool
 	}
 	std::stable_sort(order.begin(), order.end());
 
+	TTFlag flag = UPPER_BOUND;
 	Value best = -VALUE_INFINITE;
 	Move bestmove = NullMove;
 	int i = 1;
@@ -130,7 +141,6 @@ Value negamax(Board &b, int d, Value alpha, Value beta, int ply, bool root, bool
 		b.make_move(m);
 
 		Value v;
-
 		// LMR
 		if (d >= 2 && i >= 2 + 2 * pv) {
 			int r = 0;
@@ -156,6 +166,7 @@ Value negamax(Board &b, int d, Value alpha, Value beta, int ply, bool root, bool
 			if (v > alpha) {
 				alpha = v;
 				bestmove = m;
+				flag = EXACT;
 			}
 		}
 		if (v >= beta) {
@@ -171,13 +182,14 @@ Value negamax(Board &b, int d, Value alpha, Value beta, int ply, bool root, bool
 				history[b.side][m.src()][m.dst()] += d * d;
 			}
 
+			b.ttable.store(b.zobrist, d, bestmove, b.side == WHITE ? best : -best, LOWER_BOUND);
 			return best;
 		}
 
 		i++;
 	}
 
-	// Stalemate
+	// Mate/stalemate detection
 	if (best == -VALUE_MATE) {
 		if (in_check)
 			return -VALUE_MATE + ply;
@@ -187,6 +199,11 @@ Value negamax(Board &b, int d, Value alpha, Value beta, int ply, bool root, bool
 
 	if (root)
 		g_best = bestmove;
+
+	Value ttscore = b.side == WHITE ? best : -best;
+	if (best <= -VALUE_MATE_MAX_PLY || best >= VALUE_MATE_MAX_PLY)
+		ttscore = TTable::mate_to_tt(ttscore, ply);
+	b.ttable.store(b.zobrist, d, bestmove, ttscore, flag);
 	return best;
 }
 

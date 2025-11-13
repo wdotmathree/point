@@ -1,9 +1,9 @@
 #pragma once
 
+#include "boardstate.hpp"
 #include "includes.hpp"
 #include "move.hpp"
-// #include "ttable.hpp"
-#include "boardstate.hpp"
+#include "ttable.hpp"
 
 // Selects the occupancy array by xoring 6 with side (white: false = 0 ^ 6 = 6, black: true = 1 ^ 6 = 7)
 #define OCC(side) (6 ^ (side))
@@ -70,7 +70,7 @@ struct Board {
 	uint64_t pawn_hash = 0;
 	uint64_t nonpawn_hashval[2] = {0, 0}; // [side]
 	uint64_t major_hash = 0, minor_hash = 0;
-	// TTable ttable;
+	TTable ttable;
 	pzstd::largevector<uint64_t> hash_hist;
 
 	// Mailbox representation of the board for faster queries of certain data

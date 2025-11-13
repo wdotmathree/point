@@ -7,7 +7,7 @@
 // #include "history.hpp"
 #include "movegen.hpp"
 // #include "movepicker.hpp"
-// #include "ttable.hpp"
+#include "ttable.hpp"
 
 #include <algorithm>
 
