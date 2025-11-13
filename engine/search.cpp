@@ -19,17 +19,17 @@ Value negamax(Board &b, int d, Value alpha, Value beta, int ply, bool root) {
 		}
 	}
 
-	if (d == 0) {
-		// quiesce
-		return eval(b);
-	}
-
 	bool in_check = false;
 	if (b.control(_tzcnt_u64(b.piece_boards[KING] & b.piece_boards[OCC(b.side)]), !b.side))
 		in_check = true;
 	if (b.control(_tzcnt_u64(b.piece_boards[KING] & b.piece_boards[OPPOCC(b.side)]), b.side)) {
 		// We win
 		return VALUE_MATE;
+	}
+
+	if (d == 0) {
+		// quiesce
+		return eval(b);
 	}
 
 	pzstd::vector<Move> moves;
