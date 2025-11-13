@@ -85,6 +85,8 @@ Value negamax(Board &b, int d, Value alpha, Value beta, int ply, bool root) {
 		// We win
 		return VALUE_MATE;
 	}
+	if (!root && b.threefold(ply))
+		return 0;
 
 	if (d == 0) {
 		return quiesce(b, alpha, beta);
