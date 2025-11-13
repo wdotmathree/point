@@ -18,6 +18,55 @@ __attribute__((constructor)) void init_mvvlva() {
 	}
 }
 
+Value quiesce(Board &b, Value alpha, Value beta) {
+	// nodes++;
+
+	if ((nodes & 0xfff) == 0) {
+		clock_t now = clock();
+		if (now >= end_time && can_exit) {
+			early_exit = true;
+			return 0;
+		}
+	}
+
+	Value stand_pat = eval(b);
+
+	if (stand_pat >= beta)
+		return stand_pat;
+	if (stand_pat > alpha)
+		alpha = stand_pat;
+
+	pzstd::vector<Move> moves;
+	b.captures(moves);
+
+	pzstd::vector<std::pair<int, Move>> order;
+	for (auto &m : moves) {
+		int score = 0;
+		if (b.is_capture(m))
+			score += MVV_LVA[b.mailbox[m.dst()] & 0b111][b.mailbox[m.src()] & 0b111];
+
+		order.push_back({-score, m});
+	}
+	std::stable_sort(order.begin(), order.end());
+
+	Value best = stand_pat;
+	for (auto &[_, m] : order) {
+		b.make_move(m);
+		Value v = -quiesce(b, -beta, -alpha);
+		b.unmake_move();
+
+		if (v > best) {
+			best = v;
+			if (v > alpha)
+				alpha = v;
+		}
+		if (v >= beta)
+			return best;
+	}
+
+	return best;
+}
+
 Value negamax(Board &b, int d, Value alpha, Value beta, int ply, bool root) {
 	nodes++;
 
@@ -38,8 +87,7 @@ Value negamax(Board &b, int d, Value alpha, Value beta, int ply, bool root) {
 	}
 
 	if (d == 0) {
-		// quiesce
-		return eval(b);
+		return quiesce(b, alpha, beta);
 	}
 
 	pzstd::vector<Move> moves;
