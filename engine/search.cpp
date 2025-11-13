@@ -71,7 +71,7 @@ Value quiesce(Board &b, Value alpha, Value beta) {
 	return best;
 }
 
-Value negamax(Board &b, int d, Value alpha, Value beta, int ply, bool root) {
+Value negamax(Board &b, int d, Value alpha, Value beta, int ply, bool root, bool pv) {
 	nodes++;
 
 	if ((nodes & 0xfff) == 0) {
@@ -116,9 +116,19 @@ Value negamax(Board &b, int d, Value alpha, Value beta, int ply, bool root) {
 
 	Value best = -VALUE_INFINITE;
 	Move bestmove = NullMove;
+	int i = 1;
 	for (auto &[_, m] : order) {
 		b.make_move(m);
-		Value v = -negamax(b, d - 1, -beta, -alpha, ply + 1, false);
+
+		Value v;
+		if (i == 1) {
+			v = -negamax(b, d - 1, -beta, -alpha, ply + 1, false, pv);
+		} else {
+			v = -negamax(b, d - 1, -alpha - 1, -alpha, ply + 1, false, false);
+			if (v > alpha && v < beta)
+				v = -negamax(b, d - 1, -beta, -alpha, ply + 1, false, pv);
+		}
+
 		b.unmake_move();
 
 		if (early_exit)
@@ -146,6 +156,7 @@ Value negamax(Board &b, int d, Value alpha, Value beta, int ply, bool root) {
 
 			return best;
 		}
+		i++;
 	}
 
 	// Stalemate
@@ -170,7 +181,7 @@ void search(Board &b, uint64_t mx_time, int depth) {
 	memset(history, 0, sizeof(history));
 
 	for (int i = 1; i <= depth; i++) {
-		Value v = negamax(b, i, -VALUE_INFINITE, VALUE_INFINITE, 0, true);
+		Value v = negamax(b, i, -VALUE_INFINITE, VALUE_INFINITE, 0, true, true);
 		if (early_exit)
 			break;
 		std::cout << "info depth " << i << " score cp " << v << " pv " << g_best.to_string() << std::endl;
