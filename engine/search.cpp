@@ -8,6 +8,16 @@ bool can_exit;
 
 Move pvtable[MAX_PLY][MAX_PLY];
 
+int MVV_LVA[6][6];
+
+__attribute__((constructor)) void init_mvvlva() {
+	for (int i = 0; i < 6; i++) {
+		for (int j = 0; j < 6; j++) {
+			MVV_LVA[i][j] = PieceValue[i] * (QueenValue / PawnValue) - PieceValue[j];
+		}
+	}
+}
+
 Value negamax(Board &b, int d, Value alpha, Value beta, int ply, bool root) {
 	nodes++;
 
@@ -35,9 +45,19 @@ Value negamax(Board &b, int d, Value alpha, Value beta, int ply, bool root) {
 	pzstd::vector<Move> moves;
 	b.legal_moves(moves);
 
+	pzstd::vector<std::pair<int, Move>> order;
+	for (auto &m : moves) {
+		int score = 0;
+		if (b.is_capture(m))
+			score += MVV_LVA[b.mailbox[m.dst()] & 0b111][b.mailbox[m.src()] & 0b111];
+
+		order.push_back({-score, m});
+	}
+	std::stable_sort(order.begin(), order.end());
+
 	Value best = -VALUE_INFINITE;
 	Move bestmove = NullMove;
-	for (auto &m : moves) {
+	for (auto &[_, m] : order) {
 		b.make_move(m);
 		Value v = -negamax(b, d - 1, -beta, -alpha, ply + 1, false);
 		b.unmake_move();

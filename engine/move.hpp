@@ -35,6 +35,10 @@ struct Move {
 	};
 	std::string to_string() const;
 	static Move from_string(const std::string &, const void *);
+
+	constexpr bool operator<(const Move &m) const {
+		return false;
+	}
 };
 
 static constexpr Move NullMove = Move(0);
