@@ -11,13 +11,22 @@ Move pvtable[MAX_PLY][MAX_PLY];
 Value history[2][64][64];
 
 int MVV_LVA[6][6];
+int lmr[256][MAX_PLY];
 
 SSEntry ss[MAX_PLY];
 
-__attribute__((constructor)) void init_mvvlva() {
+__attribute__((constructor)) void init_consts() {
+	// MVV-LVA
 	for (int i = 0; i < 6; i++) {
 		for (int j = 0; j < 6; j++) {
 			MVV_LVA[i][j] = PieceValue[i] * (QueenValue / PawnValue) - PieceValue[j];
+		}
+	}
+
+	// LMR
+	for (int i = 1; i <= 255; i++) {
+		for (int d = 1; d < MAX_PLY; d++) {
+			lmr[i][d] = 0.77 + log(i) * log(d) / 2.36;
 		}
 	}
 }
@@ -92,7 +101,7 @@ Value negamax(Board &b, int d, Value alpha, Value beta, int ply, bool root, bool
 	if (!root && b.threefold(ply))
 		return 0;
 
-	if (d == 0) {
+	if (d <= 0) {
 		return quiesce(b, alpha, beta);
 	}
 
@@ -121,12 +130,20 @@ Value negamax(Board &b, int d, Value alpha, Value beta, int ply, bool root, bool
 		b.make_move(m);
 
 		Value v;
-		if (i == 1) {
-			v = -negamax(b, d - 1, -beta, -alpha, ply + 1, false, pv);
-		} else {
+
+		// LMR
+		if (d >= 2 && i >= 2 + 2 * pv) {
+			int r = 0;
+			r += lmr[i][d];
+
+			v = -negamax(b, d - 1 - r, -beta, -alpha, ply + 1, false, false);
+			if (v > alpha)
+				v = -negamax(b, d - 1, -alpha - 1, -alpha, ply + 1, false, false);
+		} else if (!pv || i > 1) {
 			v = -negamax(b, d - 1, -alpha - 1, -alpha, ply + 1, false, false);
-			if (v > alpha && v < beta)
-				v = -negamax(b, d - 1, -beta, -alpha, ply + 1, false, pv);
+		}
+		if (pv && (i == 1 || v > alpha)) {
+			v = -negamax(b, d - 1, -beta, -alpha, ply + 1, false, true);
 		}
 
 		b.unmake_move();
@@ -156,6 +173,7 @@ Value negamax(Board &b, int d, Value alpha, Value beta, int ply, bool root, bool
 
 			return best;
 		}
+
 		i++;
 	}
 
