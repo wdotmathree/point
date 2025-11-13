@@ -10,6 +10,8 @@ Move pvtable[MAX_PLY][MAX_PLY];
 
 int MVV_LVA[6][6];
 
+SSEntry ss[MAX_PLY];
+
 __attribute__((constructor)) void init_mvvlva() {
 	for (int i = 0; i < 6; i++) {
 		for (int j = 0; j < 6; j++) {
@@ -99,7 +101,9 @@ Value negamax(Board &b, int d, Value alpha, Value beta, int ply, bool root) {
 	for (auto &m : moves) {
 		int score = 0;
 		if (b.is_capture(m))
-			score += MVV_LVA[b.mailbox[m.dst()] & 0b111][b.mailbox[m.src()] & 0b111];
+			score += MVV_LVA[b.mailbox[m.dst()] & 0b111][b.mailbox[m.src()] & 0b111] + 1000000;
+		else if (m == ss[ply].killer0 || m == ss[ply].killer1)
+			score += 100000;
 
 		order.push_back({-score, m});
 	}
@@ -125,6 +129,11 @@ Value negamax(Board &b, int d, Value alpha, Value beta, int ply, bool root) {
 		if (v >= beta) {
 			if (root)
 				g_best = bestmove;
+
+			if (!b.is_capture(m) && m != ss[ply].killer0 && m != ss[ply].killer1) {
+				ss[ply].killer1 = ss[ply].killer0;
+				ss[ply].killer0 = m;
+			}
 
 			return best;
 		}

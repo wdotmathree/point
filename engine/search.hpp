@@ -14,3 +14,7 @@
 extern uint64_t nodes;
 
 void search(Board &b, uint64_t mx_time, int depth);
+
+struct SSEntry {
+	Move killer0, killer1;
+};
