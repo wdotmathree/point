@@ -8,6 +8,7 @@ TTEntry *TTable::probe(uint64_t key) {
 
 void TTable::store(uint64_t key, uint16_t depth, Move move, Value score, TTFlag flag) {
 	TTEntry &ent = arr[key % TT_SIZE];
+	ent.key = key;
 	ent.depth = depth;
 	ent.move = move;
 	ent.score = score;
