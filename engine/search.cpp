@@ -123,6 +123,16 @@ Value negamax(Board &b, int d, Value alpha, Value beta, int ply, bool root, bool
 			return static_eval;
 	}
 
+	// NMP
+	if (!in_check && (b.piece_boards[QUEEN] | b.piece_boards[ROOK] | b.piece_boards[BISHOP] | b.piece_boards[KNIGHT])) {
+		b.make_move(NullMove);
+		Value v = -negamax(b, d - 4, -beta, -beta + 1, ply + 1, false, false);
+		b.unmake_move();
+
+		if (v >= beta)
+			return v;
+	}
+
 	pzstd::vector<Move> moves;
 	b.legal_moves(moves);
 
