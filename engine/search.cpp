@@ -116,6 +116,13 @@ Value negamax(Board &b, int d, Value alpha, Value beta, int ply, bool root, bool
 		return quiesce(b, alpha, beta);
 	}
 
+	// RFP
+	Value static_eval = eval(b);
+	if (!pv && !in_check && d <= 8) {
+		if (static_eval - 100 * d >= beta)
+			return static_eval;
+	}
+
 	pzstd::vector<Move> moves;
 	b.legal_moves(moves);
 
