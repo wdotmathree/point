@@ -123,6 +123,11 @@ Value negamax(Board &b, int d, Value alpha, Value beta, int ply, bool root, bool
 			return static_eval;
 	}
 
+	// IIR
+	if (pv && (!ent || ent->move == NullMove) && d >= 6) {
+		d--;
+	}
+
 	pzstd::vector<Move> moves;
 	b.legal_moves(moves);
 
