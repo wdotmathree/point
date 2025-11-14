@@ -102,7 +102,7 @@ Value negamax(Board &b, int d, Value alpha, Value beta, int ply, bool root, bool
 		return 0;
 
 	TTEntry *ent = b.ttable.probe(b.zobrist);
-	if (ent && ent->depth >= d && !root) {
+	if (ent && ent->depth >= d && !pv) {
 		if (ent->flag == EXACT)
 			return ent->score;
 		if (ent->flag == LOWER_BOUND && ent->score >= beta)

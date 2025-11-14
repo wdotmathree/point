@@ -22,12 +22,19 @@ private:
 public:
 	TTable() {
 		arr = new TTEntry[TT_SIZE];
+		memset(arr, 0, sizeof(arr));
 	}
 	~TTable() {
 		delete[] arr;
 	}
-	TTable(TTable &x) = delete;
-	TTable(TTable *x) = delete;
+	TTable &operator=(const TTable &o) {
+		if (this != &o) {
+			delete[] arr;
+			arr = new TTEntry[TT_SIZE];
+			memset(arr, 0, sizeof(arr));
+		}
+		return *this;
+	}
 
 	TTEntry *probe(uint64_t key);
 	void store(uint64_t key, uint16_t depth, Move move, Value score, TTFlag flag);
