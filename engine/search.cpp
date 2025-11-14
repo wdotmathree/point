@@ -215,7 +215,7 @@ Value negamax(Board &b, int d, Value alpha, Value beta, int ply, bool root, bool
 	return best;
 }
 
-void search(Board &b, uint64_t mx_time, int depth) {
+void search(Board &b, const uint64_t mx_time, int depth) {
 	nodes = 0;
 	end_time = clock() + mx_time * (CLOCKS_PER_SEC / 1000.0);
 	early_exit = false;
@@ -223,12 +223,16 @@ void search(Board &b, uint64_t mx_time, int depth) {
 
 	memset(history, 0, sizeof(history));
 
+	clock_t start = clock();
 	for (int i = 1; i <= depth; i++) {
 		Value v = negamax(b, i, -VALUE_INFINITE, VALUE_INFINITE, 0, true, true);
 		if (early_exit)
 			break;
 		std::cout << "info depth " << i << " score cp " << v << " pv " << g_best.to_string() << std::endl;
 		can_exit = true;
+
+		if ((clock() - start) / (CLOCKS_PER_SEC / 1000.0) >= mx_time * 0.6)
+			break;
 	}
 
 	std::cout << "bestmove " << g_best.to_string() << std::endl;
