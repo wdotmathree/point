@@ -128,6 +128,13 @@ Value negamax(Board &b, int d, Value alpha, Value beta, int ply, bool root, bool
 		d--;
 	}
 
+	// Razoring
+	if (!pv && !in_check && d <= 8 && static_eval + 200 * d < alpha) {
+		Value v = quiesce(b, alpha, alpha + 1);
+		if (v < alpha)
+			return v;
+	}
+
 	pzstd::vector<Move> moves;
 	b.legal_moves(moves);
 
