@@ -129,7 +129,9 @@ Value negamax(Board &b, int d, Value alpha, Value beta, int ply, bool root, bool
 	pzstd::vector<std::pair<int, Move>> order;
 	for (auto &m : moves) {
 		int score = 0;
-		if (b.is_capture(m)) {
+		if (ent && m == ent->move) {
+			score += 10000000;
+		} else if (b.is_capture(m)) {
 			score += MVV_LVA[b.mailbox[m.dst()] & 0b111][b.mailbox[m.src()] & 0b111] + 1000000;
 		} else {
 			if (m == ss[ply].killer0 || m == ss[ply].killer1)
