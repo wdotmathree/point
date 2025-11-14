@@ -103,12 +103,13 @@ Value negamax(Board &b, int d, Value alpha, Value beta, int ply, bool root, bool
 
 	TTEntry *ent = b.ttable.probe(b.zobrist);
 	if (ent && ent->depth >= d && !pv) {
+		Value ttscore = TTable::mate_from_tt(ent->score, ply);
 		if (ent->flag == EXACT)
-			return ent->score;
-		if (ent->flag == LOWER_BOUND && ent->score >= beta)
-			return ent->score;
-		if (ent->flag == UPPER_BOUND && ent->score <= alpha)
-			return ent->score;
+			return ttscore;
+		if (ent->flag == LOWER_BOUND && ttscore >= beta)
+			return ttscore;
+		if (ent->flag == UPPER_BOUND && ttscore <= alpha)
+			return ttscore;
 	}
 
 	if (d <= 0) {
@@ -200,9 +201,7 @@ Value negamax(Board &b, int d, Value alpha, Value beta, int ply, bool root, bool
 	if (root)
 		g_best = bestmove;
 
-	Value ttscore = best;
-	if (best <= -VALUE_MATE_MAX_PLY || best >= VALUE_MATE_MAX_PLY)
-		ttscore = TTable::mate_to_tt(ttscore, ply);
+	Value ttscore = TTable::mate_to_tt(best, ply);
 	b.ttable.store(b.zobrist, d, bestmove, ttscore, flag);
 	return best;
 }

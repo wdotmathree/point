@@ -40,16 +40,18 @@ public:
 	void store(uint64_t key, uint16_t depth, Move move, Value score, TTFlag flag);
 
 	static Value mate_from_tt(Value ttscore, int ply) {
-		if (ttscore < 0)
+		if (ttscore <= -VALUE_MATE_MAX_PLY)
 			return ttscore + ply;
-		else
+		if (ttscore >= VALUE_MATE_MAX_PLY)
 			return ttscore - ply;
+		return ttscore;
 	}
 
 	static Value mate_to_tt(Value rawscore, int ply) {
-		if (rawscore < 0)
+		if (rawscore <= -VALUE_MATE_MAX_PLY)
 			return rawscore - ply;
-		else
+		if (rawscore >= VALUE_MATE_MAX_PLY)
 			return rawscore + ply;
+		return rawscore;
 	}
 };
