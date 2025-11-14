@@ -182,7 +182,7 @@ Value negamax(Board &b, int d, Value alpha, Value beta, int ply, bool root, bool
 				history[b.side][m.src()][m.dst()] += d * d;
 			}
 
-			b.ttable.store(b.zobrist, d, bestmove, b.side == WHITE ? best : -best, LOWER_BOUND);
+			b.ttable.store(b.zobrist, d, bestmove, best, LOWER_BOUND);
 			return best;
 		}
 
@@ -200,7 +200,7 @@ Value negamax(Board &b, int d, Value alpha, Value beta, int ply, bool root, bool
 	if (root)
 		g_best = bestmove;
 
-	Value ttscore = b.side == WHITE ? best : -best;
+	Value ttscore = best;
 	if (best <= -VALUE_MATE_MAX_PLY || best >= VALUE_MATE_MAX_PLY)
 		ttscore = TTable::mate_to_tt(ttscore, ply);
 	b.ttable.store(b.zobrist, d, bestmove, ttscore, flag);
