@@ -112,6 +112,9 @@ Value negamax(Board &b, int d, Value alpha, Value beta, int ply, bool root, bool
 			return ttscore;
 	}
 
+	if (in_check)
+		d++;
+
 	if (d <= 0) {
 		return quiesce(b, alpha, beta);
 	}
